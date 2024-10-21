@@ -16,7 +16,7 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from .views import *
 
 urlpatterns = [
@@ -25,5 +25,13 @@ urlpatterns = [
     path("contactez-nous/", contact, name="contact"),
     path("mes-informations/", mapresentation, name="mapresentation"),
     path("apropos/",apropos, name="apropos"),
-    path("services/",services, name="services")
+    path("services/",services, name="services"),
+    path("inscription-passager/", inscription_passager, name="inscription_passager"),
+    path("inscription-chauffeur/", inscription_chauffeur, name="inscription_chauffeur"),
+    path("connexion/", connexion, name="connexion"),
+    path("auth_gateway/", include("auth_gateway.urls")),
+    path("dashboard/", include("dashboard.urls")),
+    path("avoir_chauffeur.geojson/", avoir_chauffeur ,name="avoir_chauffeur"),
+    path("commander_nouvelle_course/", notifier_commande_course, name="notifier_commande_course"),
+    path("course_nouveau_chat/", notifier_course_chat_message, name="notifier_course_chat_message")
 ]

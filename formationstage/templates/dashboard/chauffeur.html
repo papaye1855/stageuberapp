@@ -1,0 +1,150 @@
+{% extends '../layouts/base.html' %}
+
+{% block title %}
+    Uber | Dashboard Chauffeur
+{% endblock %}
+
+
+{% block content  %}
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
+<div class="container mt-3">
+    <div class="row">
+        <div class="col-4">
+            <div id="map" style="height: 600px; width: 100%;"></div>
+        </div>
+        <div class="col-4">
+            <div id="chauffeurs-info" style="height: auto; width: 400px;">
+            </div>
+            <form action="#" method="post">
+                <p>
+                    <input type="text" id="chauffeurSSE" value="None" hidden>
+                </p>
+                <button type="button" class="btn btn-success" id="btnCommander">Accepter la course</button>
+            </form>
+            <hr>
+            <h4>Discussion chat</h4>
+            <div id="chat" style="height: auto; width: 400px;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+<script>
+    // Enable pusher logging - don't include this in production
+    Pusher.logToConsole = true;
+
+    var pusher = new Pusher('b63a75edcfdfdd037332', {
+        cluster: 'us2'
+    });
+
+    mapboxgl.accessToken = "pk.eyJ1IjoicGFwYXllIiwiYSI6ImNsM2IxbXJjOTAwaHkzZG8yY2hnOG9za3kifQ.GH_va_pb70ijPn0M05N-1A"
+    let map = new mapboxgl.Map({
+        container : 'map',
+        style : "mapbox://styles/mapbox/streets-v12",
+        center : [-73.57338,45.50025],
+        interactive:true,
+        transition : {
+            "duration": 300,
+            "delay" : 0
+        },
+        zoom : 10.7
+    })
+    map.addControl(
+        new MapboxGeocoder({
+            accessToken: mapboxgl.accessToken,
+            mapboxgl: mapboxgl
+        })
+    );
+
+    map.addControl(new mapboxgl.FullscreenControl())
+    map.addControl(new mapboxgl.ScaleControl())
+    map.on("load", ()=>{
+        map.loadImage(
+            "http://localhost:8000/static/images/taxi.png",
+            (error, image) => {
+                if (error) throw error;
+                map.addImage("custom-marker-chauffeur", image)
+                map.addSource("chauffeurs", {
+                    'type' : "geojson",
+                    "data" : "http://localhost:8000/avoir_chauffeur.geojson"
+                })
+                map.addLayer({
+                    'id' : 'chauffeurs-layers',
+                    'type' : 'symbol',
+                    'source' : 'chauffeurs',
+                    'layout' : {
+                        'icon-image' : 'custom-marker-chauffeur',
+                        'text-field' : ['get' , 'nomComplet'],
+                        'text-offset' : [0, 2],
+                        'text-anchor' : 'top'
+                    }
+                })
+
+            }
+        )
+    })
+
+    map.on('click', (event) =>{
+        const features = map.queryRenderedFeatures(event.point, {
+            layers:['chauffeurs-layers']
+        });
+        if (!features.length){
+            return;
+        }
+
+        const feature = features[0]
+        console.log(feature)
+        const chauffeurDiv = document.getElementById("chauffeurs-info")
+        const informations = `
+        <h4 class="text-center">Informations du chauffeur selectionné : </h4>
+        <h3>Nom : ${feature.properties.nom}</h3>
+        <h3>Prenom : ${feature.properties.prenom}</h3>
+        <h3>Marque de la voiture : ${feature.properties.marqueVoiture}</h3>
+        <h3>Couleur de la voiture : ${feature.properties.couleurVoiture}</h3>
+        <h3>Immatricualtion de la voiture : ${feature.properties.immatriculationVoiture}</h3>
+        <h3>Année de la voiture : ${feature.properties.anneeVoiture}</h3>
+        `
+        
+        chauffeurDiv.innerHTML = informations
+
+    })
+    var btnCommander = document.getElementById("btnCommander")
+    btnCommander.addEventListener("click", (e)=>{
+        var chauffeurDiv = document.getElementById("chauffeurs-info")
+        if (chauffeurDiv.innerText.toString().trim().length <= 0){
+            alert("Veuillez d'abord selectionner un chauffeur")
+            return;
+        }
+    })
+    var channel = pusher.subscribe('{{request.user.chauffeur.immatriculation}}');
+    channel.bind('nouvelle-course', function(data) {
+        var message = data.message
+        var prixCourse = data.prixCourse
+        var distance = data.distance
+        const chauffeurDiv = document.getElementById("chauffeurs-info")
+        const informations = `
+        <h4 class="text-center">Nouvelle Course demandée : </h4>
+        <h3>${message}</h3>
+        <h3>Prix de la course : ${prixCourse}</h3>
+        <h3>Distance à parcourir : ${distance}</h3>
+        `
+        chauffeurDiv.innerHTML += informations
+    });
+    channel.bind('nouveau-message', function(data) {
+        var message = data.message
+        var passagerNomComplet = data.passagerNomComplet
+        const chatDiv = document.getElementById("chat")
+        const informations = `
+            <div class="card">
+                <div class="card-body">
+                    <h3>${passagerNomComplet}</h3>
+                    <p>${message}</p>
+                </div>
+            </div>
+        `
+        chatDiv.innerHTML += informations
+    });
+    </script>
+{% endblock %}
