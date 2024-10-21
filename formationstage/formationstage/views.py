@@ -6,6 +6,9 @@ from django.views.decorators.csrf import csrf_exempt
 
 import pusher
 
+## Après avoir créer un compte pusher, tu dois creer une application dans pusher
+## pour avoir ton key, secret et app_id.
+
 pusher_client = pusher.Pusher(
   app_id='REMPLACER_ICI',
   key='REMPLACER_ICI',
