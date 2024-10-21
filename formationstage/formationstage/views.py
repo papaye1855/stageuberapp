@@ -7,10 +7,10 @@ from django.views.decorators.csrf import csrf_exempt
 import pusher
 
 pusher_client = pusher.Pusher(
-  app_id='1861464',
-  key='b63a75edcfdfdd037332',
-  secret='98943a1494ca8e5961af',
-  cluster='us2',
+  app_id='REMPLACER_ICI',
+  key='REMPLACER_ICI',
+  secret='REMPLACER_ICI',
+  cluster='REMPLACER_ICI',
 )
 
 def index(request):
